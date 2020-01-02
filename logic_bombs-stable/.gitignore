@@ -1,0 +1,39 @@
+# Python:
+*.pyc
+__pycache__/
+
+# Log
+*.log
+*.tmp
+
+# Binary
+core
+*.exe
+*.out
+*.so
+*.o
+*.a
+*.covpro
+build/
+bin/
+
+# Outputs
+*.txt
+*.csv
+angr/
+klee/
+triton/
+res.json
+
+# Assembly
+*.s
+*.asm
+
+# History
+history/
+tmp/
+
+
+.vscode/
+.idea/
+sick/

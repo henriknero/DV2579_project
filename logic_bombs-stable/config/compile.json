@@ -1,0 +1,88 @@
+{
+    "general": {
+        "CC": "clang"
+    },
+
+    "crypto_lib": {
+        "mkdir": [
+            "tmp",
+            "build"
+        ],
+        "cmd": [
+            "{CC} -I{INCLUDE} -c -Wall -Werror -fpic -o tmp/{&FILENAME}.o {!FILENAME}",
+            "ar cr build/lib{OUTPUT}.a {!INPUTS} #BATCH"
+        ],
+        "dependencies": {
+            "FILENAME": ["lib/sha1.c", "lib/aes.c", "lib/crypto_utils.c"],
+            "INPUTS": ["tmp/.*\\.o"],
+            "INCLUDE": "include",
+            "OUTPUT": "crypto"
+        },
+        "exceptions": {
+
+        },
+        "rm": [
+            "tmp"
+        ]
+    },
+
+    "utils_lib": {
+        "mkdir": [
+            "tmp",
+            "build"
+        ],
+        "cmd": [
+            "{CC} -I{INCLUDE} -c -Wall -Werror -fpic -o tmp/{&OUTPUT}.o {!FILENAME} #SINGLE",
+            "ar cr build/lib{OUTPUT}.a {!INPUTS} #BATCH"
+        ],
+        "dependencies": {
+            "FILENAME": ["lib/utils.c"],
+            "INPUTS": ["tmp/.*\\.o"],
+            "INCLUDE": "include",
+            "OUTPUT": "utils"
+        },
+        "exceptions": [
+            "src_cpp"
+        ],
+        "rm": [
+            "tmp"
+        ]
+    },
+
+    "src": {
+        "mkdir": [
+            "build"
+        ],
+        "cmd": [
+            "{CC} -I{INCLUDE} -Lbuild -o build/{&FILENAME} -xc - -lpthread -lm -lutils -lcrypto #PIPE"
+        ],
+        "dependencies": {
+            "PATH": "src/",
+            "INCLUDE": "include",
+            "TEMPLATE": "templates/default.c"
+        },
+        "exceptions": [
+        ],
+        "rm": [
+        ]
+    },
+
+    "src_cpp": {
+        "CC": "clang++",
+        "mkdir": [
+            "build"
+        ],
+        "cmd": [
+            "{CC} -I{INCLUDE} -Lbuild -o build/{&FILENAME} -xc++ - -lpthread -lm -lutils #PIPE"
+        ],
+        "dependencies": {
+            "PATH": "src_cpp/",
+            "INCLUDE": "include",
+            "TEMPLATE": "templates/default.c"
+        },
+        "exceptions": [
+        ],
+        "rm": [
+        ]
+    }
+}
