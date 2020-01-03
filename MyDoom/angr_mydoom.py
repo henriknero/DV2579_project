@@ -11,6 +11,8 @@ import csv
 import logging
 #logging.getLogger('angr').setLevel('ERROR')
 
+start = time.time()
+
 stub_func = angr.SIM_PROCEDURES['stubs']['ReturnUnconstrained']
 
 def debug_function(state):
@@ -31,27 +33,26 @@ print('Generating CFGEmulated')
 cfg = p.analyses.CFGEmulated(keep_state=True)
 
 print('Generating CDG')
-cdg = p.analyses.CDG(cfg)
+#cdg = p.analyses.CDG(cfg)
 print('Generating DDG')
-ddg = p.analyses.DDG(cfg)
+#ddg = p.analyses.DDG(cfg)
 
 print('Finding node')
 target_node = cfg.model.get_any_node(target, anyaddr=True)
 
-back_slice = p.analyses.BackwardSlice(cfg, cdg, ddg, targets=[(target_node,-1)])
+back_slice = p.analyses.BackwardSlice(cfg, targets=[(target_node,-1)], control_flow_slice=True)
 acfg = back_slice.annotated_cfg()
 #p = angr.Project(path)
-p.hook(0x004a465e, stub_func())
 #p.hook(0x4a4285, stub_func())
-state = p.factory.entry_state(args=[p.filename, sym_argv], add_options=angr.options.unicorn, veritesting=True)
+p.hook(0x004a45e3, stub_func())
+
+state = p.factory.entry_state(args=[p.filename, sym_argv])
 state.inspect.b('call', action=debug_function)
-simulation_manager = p.factory.simgr(state)
-#simulation_manager.use_technique(angr.exploration_techniques.DFS())
+
+simulation_manager = p.factory.simgr(state, veritesting=True)
 simulation_manager.use_technique(angr.exploration_techniques.Slicecutor(acfg))
-#logging.getLogger('angr').setLevel('DEBUG')
+logging.getLogger('angr.exploration_techniques').setLevel('DEBUG')
 simulation_manager.explore(find=find, avoid=avoid)
-#while simulation.found < 1:
-#    sm.step()
 for found in simulation_manager.found:
     print("dwHighDateTime")
     print(" ",found.solver.min(found.solver.constraints[42].args[0]))
@@ -59,6 +60,6 @@ for found in simulation_manager.found:
     print(" ",found.solver.min(found.regs.eax))
 print("Testing")
 
-
+print(time.time()-start)
 
 #This takes long time but it can find the Logic bomb location.

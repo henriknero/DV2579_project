@@ -49,7 +49,10 @@ class Slicecutor(ExplorationTechnique):
             l.debug("... checking exit to %#x from %#x.", successor.addr, state.addr)
 
             try:
-                taken = self._annotated_cfg.should_take_exit(state.addr, successor.addr)
+                if successor.addr > self.project.loader.main_object.max_addr or state.addr > self.project.loader.main_object.max_addr:
+                    taken = successor
+                else:
+                    taken = self._annotated_cfg.should_take_exit(state.addr, successor.addr)
             except AngrExitError: # TODO: which exception?
                 l.debug("... annotated CFG did not know about it!")
                 new_mystery.append(successor)

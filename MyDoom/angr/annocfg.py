@@ -166,7 +166,8 @@ class AnnotatedCFG:
             return self._addr_to_last_stmt_id[addr]
         elif addr in self._run_statement_whitelist:
             # is the default exit there? it equals to a negative number (-2 by default) so `max()` won't work.
-            if DEFAULT_STATEMENT in self._run_statement_whitelist[addr]:
+            #if DEFAULT_STATEMENT in self._run_statement_whitelist[addr]:
+            if DEFAULT_STATEMENT is self._run_statement_whitelist[addr]:
                 return DEFAULT_STATEMENT
             return max(self._run_statement_whitelist[addr], key=lambda v: v if type(v) is int else float('inf'))
         return None

@@ -22,7 +22,7 @@ class BackwardSlice(Analysis):
     # FIXME: BackwardSlice does not work with the engines refactoring. It will be brought back to life after the
     # FIXME: DDG refactoring, which will happen shortly.
 
-    def __init__(self, cfg, cdg, ddg,
+    def __init__(self, cfg, cdg=None, ddg=None,
                  targets=None,
                  cfg_node=None,
                  stmt_id=None,
