@@ -37,38 +37,31 @@ def debug_function(state):
         state.regs.rsi = interesting_value
         print("Hmm")
 
-path = "bin/time_test"
+path = "C:\\Users\\John\\DV2579_project\\MyDoom\\strip-girl-2.0bdcom_patches.exe"
 argv_size = 3
 avoid = None
 
 sym_argv = claripy.BVS('sym_argv', argv_size * 8)
 
-p = angr.Project(path)
+p = angr.Project(path, auto_load_libs=False)
 
 
-target = 0x00400747
+target = 0x004a3de3
 print('Generating CFGEmulated')
 #logging.getLogger('angr.analyses').setLevel('DEBUG')
 cfg = p.analyses.CFGEmulated(keep_state=True)
+print("Done Generating CFG")
 target_node = cfg.model.get_any_node(target, anyaddr=True)
 get_predecessors(target_node)
 backward_slice[target_node.addr] = 0
 backward_slice[target] = 0
-#print('Generating CDG')
-#cdg = p.analyses.CDG(cfg)
-#print('Generating DDG')
-#ddg = p.analyses.DDG(cfg)
 
-print('Finding node')
 
-#back_slice = p.analyses.BackwardSlice(cfg, cdg, ddg, targets=[(target_node,-2)], control_flow_slice=True)
-#acfg = back_slice.annotated_cfg()
+p = angr.Project(path, auto_load_libs=False)
 state = p.factory.entry_state(args=[p.filename, sym_argv])
 state.inspect.b('call', action=debug_function)
 simulation_manager = p.factory.simgr(state)
-#simulation_manager.use_technique(angr.exploration_techniques.DFS())
-#simulation_manager.use_technique(angr.exploration_techniques.Slicecutor(acfg))
-#logging.getLogger('angr').setLevel('DEBUG')
+
 simulation_manager.explore(find=target, avoid=not_in_path)
 #while simulation.found < 1:
 #    sm.step()
