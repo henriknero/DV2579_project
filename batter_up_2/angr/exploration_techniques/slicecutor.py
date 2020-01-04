@@ -52,7 +52,7 @@ class Slicecutor(ExplorationTechnique):
                 if successor.addr > self.project.loader.main_object.max_addr:
                     taken = successor
                 else:
-                    taken = self._annotated_cfg.should_take_exit(state.addr, successor.addr)
+                taken = self._annotated_cfg.should_take_exit(state.addr, successor.addr)
             except AngrExitError: # TODO: which exception?
                 l.debug("... annotated CFG did not know about it!")
                 new_mystery.append(successor)
@@ -65,7 +65,6 @@ class Slicecutor(ExplorationTechnique):
                 else:
                     l.debug("... not taking the exit.")
                     new_cut.append(successor)
-
         unconstrained_successors = stashes.get('unconstrained', [])
         if not new_active and unconstrained_successors and self._force_taking_exit:
             stashes['unconstrained'] = []

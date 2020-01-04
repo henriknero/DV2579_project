@@ -58,7 +58,7 @@ simulation_manager.use_technique(angr.exploration_techniques.Slicecutor(acfg))
 simulation_manager.explore(find=find, avoid=avoid)
 #while simulation.found < 1:
 #    sm.step()
-for found in simulation_manager.deadended:
+for found in simulation_manager.active:
     print("dwHighDateTime")
     print(" ",found.solver.min(found.solver.constraints[42].args[0]))
     print("dwLowDateTime")
