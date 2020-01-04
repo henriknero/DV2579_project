@@ -10,7 +10,7 @@ class Slicecutor(ExplorationTechnique):
     The Slicecutor is an exploration that executes provided code slices.
     """
 
-    def __init__(self, annotated_cfg, force_taking_exit=False):
+    def __init__(self, annotated_cfg, force_taking_exit=False, find=None):
         """
         All parameters except `annotated_cfg` are optional.
 
@@ -34,7 +34,10 @@ class Slicecutor(ExplorationTechnique):
     def step_state(self, simgr, state, **kwargs):
         l.debug("%s ticking state %s at address %#x.", self, state, state.addr)
         stashes = simgr.step_state(state, **kwargs)
-
+        for error in simgr.errored:
+            l.error("Simulation Manager errored with: %s", error)
+            for active_state in simgr.active:
+                active_state.block().pp()
         new_active = []
         new_cut = []
         new_mystery = []
@@ -44,15 +47,25 @@ class Slicecutor(ExplorationTechnique):
         if flat_successors is None:
             # Did the user explicitly put them into the 'active' stash instead?
             flat_successors = stashes.pop('active', [])
+            #flat_successors = stashes[]
 
         for successor in flat_successors:
             l.debug("... checking exit to %#x from %#x.", successor.addr, state.addr)
 
             try:
-                if successor.addr > self.project.loader.main_object.max_addr or state.addr > self.project.loader.main_object.max_addr:
-                    taken = successor
-                else:
-                    taken = self._annotated_cfg.should_take_exit(state.addr, successor.addr)
+                taken = self._annotated_cfg.should_take_exit(state.addr, successor.addr)
+                #if not taken:
+                #    self._stuck_in_fuck.append(successor)
+                    #if successor.addr not in self._stuck_in_fuck:
+                    #    self._stuck_in_fuck[successor.addr] = [successor, 0]
+                    #self._stuck_in_fuck[successor.addr][1] += 1
+                    #if self._stuck_in_fuck[successor.addr][1] > self._stuck_in_fuck_threshold:
+                    #    del self._stuck_in_fuck[successor.addr]
+
+                    #taken = successor
+                #if successor.addr > self.project.loader.main_object.max_addr or state.addr > self.project.loader.main_object.max_addr:
+                #    taken = successor
+                #else:
             except AngrExitError: # TODO: which exception?
                 l.debug("... annotated CFG did not know about it!")
                 new_mystery.append(successor)
@@ -65,7 +78,19 @@ class Slicecutor(ExplorationTechnique):
                 else:
                     l.debug("... not taking the exit.")
                     new_cut.append(successor)
-
+        if not new_active:
+            new_active.append(successor)
+#            if self._stuck_in_fuck:
+#                new_active.append(self._stuck_in_fuck.pop())
+#                self._stuck_in_fuck_table.setdefault(new_active[-1].addr, 0)
+#                self._stuck_in_fuck_table[new_active[-1].addr] += 1
+#                if self._stuck_in_fuck_table[new_active[-1].addr] > 20 and self._stuck_in_fuck:
+#                    new_active.pop()
+#                    new_active.append(self._stuck_in_fuck.pop())
+#                if new_active[-1].addr == self.find:
+#                    print("Fuck")
+#                l.warning("Block %#x did not find successors in CFG going of rail a little.", new_active[-1].addr)
+        
         unconstrained_successors = stashes.get('unconstrained', [])
         if not new_active and unconstrained_successors and self._force_taking_exit:
             stashes['unconstrained'] = []
@@ -87,3 +112,10 @@ class Slicecutor(ExplorationTechnique):
         kwargs['whitelist'] = self._annotated_cfg.get_whitelisted_statements(state.addr)
         kwargs['last_stmt'] = self._annotated_cfg.get_last_statement_index(state.addr)
         return simgr.successors(state, **kwargs)
+    
+    def complete(self, simgr):
+        for curr_active in simgr.active:
+            if curr_active.addr == self.find:
+                return True
+        return False
+            
