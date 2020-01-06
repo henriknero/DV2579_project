@@ -6,10 +6,6 @@ import time
 import argparse
 import logging
 
-class new_getpid(angr.SimProcedure):
-    def run(self):
-        result = self.state.solver.BVS('pid', 32)
-        return result
 
 stub_func = angr.SIM_PROCEDURES['stubs']['ReturnUnconstrained']
 
@@ -18,27 +14,16 @@ backward_slice = {}
 
 ############################### Stuff to Change ######################################
 
-path = "bin/time_test"
+path = "bin/ping_csv"
 # Target can be either a address or a function returning a Boolean
-find = 0x00400747
-stdout = b''
-interesting_function = None     # 0x400590 
-interesting_state = None        # 0x400575
-interesting_value = None        # claripy.BVS('regs.rax', 64)
-use_simple_slicing = True       # Utilizes angr.analysis.Backwardslice and angr.analysis.CFG to build a backwardslice of the program removing uninteresting branches
-argv1_size = 11
-argv2_size = 6
-argv = []                       # [claripy.BVS('sym_argv', argv1_size * 8), claripy.BVS('sym_argv', argv2_size * 8)]
-# Depending on how you want angr to work it is possible to add and remove different 
-# options, these options can be found at:
-#   https://github.com/angr/angr-doc/blob/master/docs/appendices/options.md
-added_options = set()
-#added_options.add(angr.options.STRICT_PAGE_ACCESS)
-#added_options.add(angr.options.CGC_ZERO_FILL_UNCONSTRAINED_MEMORY)
+find = 0x00400bea
 
-removed_options = set()
-#removed_options.add(angr.options.LAZY_SOLVES)
-#removed_options.add(angr.options.EFFICIENT_STATE_MERGING)
+#interesting_function = 0x400590
+interesting_state = 0x400575
+interesting_value = claripy.BVS('regs.rax', 64)
+use_simple_slicing = False
+argv = []
+
 ######################################################################################
 
 ############################# Functions ##############################################
@@ -47,27 +32,29 @@ def not_in_path(state):
         print("Avoiding block %#x" %state.addr)
         return True
 
+def get_predecessors(node):
+    for predecessor in node.predecessors:
+        if predecessor.block_id not in visited_list:
+            visited_list.append(predecessor.block_id)
+            get_predecessors(predecessor)
+        if predecessor.addr not in backward_slice:
+            backward_slice[predecessor.addr] = []
+        backward_slice[predecessor.addr].append(node.addr)
+
 def debug_call(state):
     if state.addr < 0x1000000:
         print("Call to %s" % state)
-    if state.addr == interesting_function:
-        state.regs.rsi = interesting_value
+#    if state.addr == interesting_function:
+#        state.regs.rsi = interesting_value
 def debug_exit(state):
     if state.addr == interesting_state:
         state.regs.edx = interesting_value
         print("Do something")
-def is_successful(state):
-    stdout_output = state.posix.dumps(sys.stdout.fileno())
-    return stdout in stdout_output
 
 #######################################################################################
 timer_start = time.time()
 avoid = None
 p = angr.Project(path)
-
-# It is possible to hook both functions and addresses using the built in hooking functionality 
-p.hook_symbol('getpid', new_getpid())
-#p.hook(0x4006b0, debug_exit)
 
 if use_simple_slicing:
     print('Generating CFGEmulated')
@@ -80,27 +67,20 @@ if use_simple_slicing:
     backward_slice[find] = 0
     backward_slice[target_node.addr] = 0
 
-state = p.factory.entry_state(args=[p.filename]+argv, add_options=added_options, remove_options=removed_options)
+state = p.factory.entry_state(args=[p.filename]+argv)
 
 # SimInspect Functionality makes it possible to run functions or drop to shell when some
 # specific events happen. They can be found at
 # https://docs.angr.io/core-concepts/simulation#breakpoints
 state.inspect.b('call', action=debug_call)
 #state.inspect.b('exit',when=angr.BP_AFTER, action=debug_exit)
-if stdout:
-    find=is_successful
+
 simulation_manager = p.factory.simgr(state)
 simulation_manager.explore(find=find, avoid=avoid)
 
 for found in simulation_manager.found:
     print(f"Found state {hex(found.addr)}")
-    if interesting_value:
-        print(found.solver.eval(interesting_value), cast_to=int)
-    for arg in argv:
-        print(found.solver.eval(arg, cast_to=bytes))
-    for unconstrained in simulation_manager.unconstrained:
-        print("Found unconstrained memory in state: {}".format(unconstrained))
-        print("{}".format(unconstrained.regs.pc))
+    print(found.solver.eval(interesting_value), cast_to=int)
 
 timer_end = time.time()
 print(f"Time spent: {timer_end - timer_start}")
