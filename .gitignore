@@ -4,3 +4,4 @@ pypyenv
 *.pyc
 .vscode
 .gdb_history
+make_graph.py
