@@ -3,3 +3,4 @@ env
 pypyenv
 *.pyc
 .vscode
+.gdb_history
