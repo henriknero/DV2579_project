@@ -6,11 +6,14 @@ import time
 import argparse
 import logging
 
+# SimProcedures can be used to hook functioncalls and addresses to change the behaviour of the program or to optimize slow functions by writing them in python.
+# https://docs.angr.io/extending-angr/simprocedures
 class new_getpid(angr.SimProcedure):
     def run(self):
         result = self.state.solver.BVS('pid', 32)
         return result
 
+# Angr comes with a bunch of stub-precedures, for example there is a Nop stub to just skip an instruction or function.
 stub_func = angr.SIM_PROCEDURES['stubs']['ReturnUnconstrained']
 
 visited_list = []
@@ -21,11 +24,18 @@ backward_slice = {}
 path = "bin/time_test"
 # Target can be either a address or a function returning a Boolean
 find = 0x00400747
+
+# By setting stdout to a value you can make angr search for a string instead of an address. I simply set the find variable to the function is_successful further down in this template.
 stdout = b''
+
+# These three variables are connected to the inspect functions debug_call and debug_exit.
 interesting_function = None     # 0x400590 
 interesting_state = None        # 0x400575
 interesting_value = None        # claripy.BVS('regs.rax', 64)
-use_simple_slicing = True       # Utilizes angr.analysis.Backwardslice and angr.analysis.CFG to build a backwardslice of the program removing uninteresting branches
+
+# Utilizes angr.analysis.Backwardslice and angr.analysis.CFG to build a backwardslice of the program removing uninteresting branches
+use_simple_slicing = True      
+
 argv1_size = 11
 argv2_size = 6
 argv = []                       # [claripy.BVS('sym_argv', argv1_size * 8), claripy.BVS('sym_argv', argv2_size * 8)]
